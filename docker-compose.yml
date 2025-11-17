@@ -80,8 +80,7 @@ services:
       dockerfile: ./containers/playwright/Dockerfile
     container_name: playwright
     volumes:
-      - ./containers/laravel/:/var/www/html
-      - ./containers/playwright/e2e:/var/www/html/tests/e2e
+      - ./containers/playwright:/var/www/html
     ports:
       - "9323:9323"
     tty: true
