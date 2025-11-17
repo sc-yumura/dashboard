@@ -74,6 +74,20 @@ services:
       - "1025:1025"
     restart: unless-stopped
 
+  playwright:
+    build:
+      context: .
+      dockerfile: ./containers/playwright/Dockerfile
+    container_name: playwright
+    volumes:
+      - ./containers/laravel/:/var/www/html
+      - ./containers/playwright/e2e:/var/www/html/tests/e2e
+    ports:
+      - "9323:9323"
+    tty: true
+    depends_on:
+      - nginx
+
 volumes:
   postgres_data:
   tmp:
