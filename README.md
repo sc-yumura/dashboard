@@ -50,3 +50,12 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 ### Hat tip to anyone whose code was used / コードを書いた人への感謝
 ### Inspiration / 何からインスピレーションを得たか
 ### etc / その他
+
+artisanにコマンドを追加しました
+
+```sh
+php artisan make:react-view products index show
+Created: resources/js/pages/products/index.tsx
+Created: resources/js/pages/products/show.tsx
+React view files created successfully.
+```
