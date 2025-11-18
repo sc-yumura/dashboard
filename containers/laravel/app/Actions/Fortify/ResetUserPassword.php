@@ -20,8 +20,8 @@ class ResetUserPassword implements ResetsUserPasswords
         Validator::make($input, [
             'password' => $this->passwordRules(),
         ])->validate();
-
-        $user->forceFill([
+// TODO: AuthenticatedAccount自体を渡せないか？
+        $user->authenticateAccount()->forceFill([
             'password' => $input['password'],
         ])->save();
     }
