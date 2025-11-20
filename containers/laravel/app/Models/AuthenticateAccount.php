@@ -11,7 +11,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 class AuthenticateAccount extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\AuthenticateAccountFactory> */
-    use HasFactory, TwoFactorAuthenticatable;
+    use HasFactory, TwoFactorAuthenticatable, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -19,6 +19,7 @@ class AuthenticateAccount extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'user_id',
         'email',
         'password',
     ];

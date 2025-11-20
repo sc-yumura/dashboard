@@ -2,7 +2,7 @@
 
 namespace App\Actions\Fortify;
 
-use App\Models\User;
+use App\Models\AuthenticateAccount;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\ResetsUserPasswords;
 
@@ -15,13 +15,13 @@ class ResetUserPassword implements ResetsUserPasswords
      *
      * @param  array<string, string>  $input
      */
-    public function reset(User $user, array $input): void
+    public function reset(AuthenticateAccount $account, array $input): void
     {
         Validator::make($input, [
             'password' => $this->passwordRules(),
         ])->validate();
-// TODO: AuthenticatedAccount自体を渡せないか？
-        $user->authenticateAccount()->forceFill([
+
+        $account->forceFill([
             'password' => $input['password'],
         ])->save();
     }

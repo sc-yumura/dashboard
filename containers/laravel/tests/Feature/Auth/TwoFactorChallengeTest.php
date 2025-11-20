@@ -1,10 +1,10 @@
 <?php
 
-use App\Models\User;
+use App\Models\AuthenticateAccount;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 
-test('two factor challenge redirects to login when not authenticated', function () {
+test('二要素認証チャレンジは未認証時にログインへリダイレクトされる', function () {
     if (! Features::canManageTwoFactorAuthentication()) {
         $this->markTestSkipped('Two-factor authentication is not enabled.');
     }
@@ -14,7 +14,7 @@ test('two factor challenge redirects to login when not authenticated', function 
     $response->assertRedirect(route('login'));
 });
 
-test('two factor challenge can be rendered', function () {
+test('二要素認証チャレンジ画面が表示できる', function () {
     if (! Features::canManageTwoFactorAuthentication()) {
         $this->markTestSkipped('Two-factor authentication is not enabled.');
     }
@@ -24,17 +24,18 @@ test('two factor challenge can be rendered', function () {
         'confirmPassword' => true,
     ]);
 
-    $user = User::factory()->create();
+    $account = AuthenticateAccount::factory()->create();
 
-    $user->forceFill([
+    $account->forceFill([
         'two_factor_secret' => encrypt('test-secret'),
         'two_factor_recovery_codes' => encrypt(json_encode(['code1', 'code2'])),
         'two_factor_confirmed_at' => now(),
     ])->save();
 
-    $this->post(route('login'), [
-        'email' => $user->email,
+    $this->withSession([])->post(route('login'), [
+        'email' => $account->email,
         'password' => 'password',
+        '_token' => csrf_token(),
     ]);
 
     $this->get(route('two-factor.login'))

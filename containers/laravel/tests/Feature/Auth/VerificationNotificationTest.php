@@ -1,33 +1,39 @@
 <?php
 
-use App\Models\User;
+use App\Models\AuthenticateAccount;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\Notification;
 
 test('sends verification notification', function () {
     Notification::fake();
 
-    $user = User::factory()->create([
+    $account = AuthenticateAccount::factory()->create([
         'email_verified_at' => null,
     ]);
 
-    $this->actingAs($user)
-        ->post(route('verification.send'))
+    $this->actingAs($account)
+        ->withSession([])
+        ->post(route('verification.send'),[
+            '_token' => csrf_token(),
+        ])
         ->assertRedirect(route('home'));
 
-    Notification::assertSentTo($user, VerifyEmail::class);
+    Notification::assertSentTo($account, VerifyEmail::class);
 });
 
 test('does not send verification notification if email is verified', function () {
     Notification::fake();
 
-    $user = User::factory()->create([
+    $account = AuthenticateAccount::factory()->create([
         'email_verified_at' => now(),
     ]);
 
-    $this->actingAs($user)
-        ->post(route('verification.send'))
-        ->assertRedirect(route('dashboard', absolute: false));
+    $this->actingAs($account)
+        ->withSession([])
+        ->post(route('verification.send', [
+            '_token' => csrf_token(),
+        ]))
+        ->assertRedirect(route('home', absolute: false));
 
     Notification::assertNothingSent();
 });

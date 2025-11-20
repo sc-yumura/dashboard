@@ -1,28 +1,30 @@
 <?php
 
 use App\Models\User;
+use App\Models\AuthenticateAccount;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
 
-test('login screen can be rendered', function () {
+test('ログイン画面が表示できる', function () {
     $response = $this->get(route('login'));
 
     $response->assertStatus(200);
 });
 
-test('users can authenticate using the login screen', function () {
-    $user = User::factory()->withoutTwoFactor()->create();
+test('ユーザーはログイン画面で認証できる', function () {
+    $account = AuthenticateAccount::factory()->withoutTwoFactor()->create();
 
-    $response = $this->post(route('login.store'), [
-        'email' => $user->email,
+    $response = $this->withSession([])->post(route('login.store'), [
+        'email' => $account->email,
         'password' => 'password',
+        '_token' => csrf_token(),
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('home', absolute: false));
 });
 
-test('users with two factor enabled are redirected to two factor challenge', function () {
+test('二要素認証が有効なユーザーは二要素認証チャレンジにリダイレクトされる', function () {
     if (! Features::canManageTwoFactorAuthentication()) {
         $this->markTestSkipped('Two-factor authentication is not enabled.');
     }
@@ -32,52 +34,57 @@ test('users with two factor enabled are redirected to two factor challenge', fun
         'confirmPassword' => true,
     ]);
 
-    $user = User::factory()->create();
+    $account = AuthenticateAccount::factory()->create();
 
-    $user->forceFill([
+    $account->forceFill([
         'two_factor_secret' => encrypt('test-secret'),
         'two_factor_recovery_codes' => encrypt(json_encode(['code1', 'code2'])),
         'two_factor_confirmed_at' => now(),
     ])->save();
 
-    $response = $this->post(route('login'), [
-        'email' => $user->email,
+    $response = $this->withSession([])->post(route('login'), [
+        'email' => $account->email,
         'password' => 'password',
+        '_token' => csrf_token(),
     ]);
 
     $response->assertRedirect(route('two-factor.login'));
-    $response->assertSessionHas('login.id', $user->id);
+    $response->assertSessionHas('login.id', $account->id);
     $this->assertGuest();
 });
 
-test('users can not authenticate with invalid password', function () {
-    $user = User::factory()->create();
+test('無効なパスワードでは認証できない', function () {
+    $account = AuthenticateAccount::factory()->create();
 
-    $this->post(route('login.store'), [
-        'email' => $user->email,
+    $this->withSession([])->post(route('login.store'), [
+        'email' => $account->email,
         'password' => 'wrong-password',
+        '_token' => csrf_token(),
     ]);
 
     $this->assertGuest();
 });
 
-test('users can logout', function () {
-    $user = User::factory()->create();
+test('ユーザーはログアウトできる', function () {
+    $account = AuthenticateAccount::factory()->create();
 
-    $response = $this->actingAs($user)->post(route('logout'));
+    $response = $this->actingAs($account)->withSession([])->post(route('logout'), [
+        '_token' => csrf_token(),
+    ]);
 
     $this->assertGuest();
     $response->assertRedirect(route('home'));
 });
 
-test('users are rate limited', function () {
-    $user = User::factory()->create();
+test('ユーザーはレート制限される', function () {
+    $account = AuthenticateAccount::factory()->create();
 
-    RateLimiter::increment(md5('login'.implode('|', [$user->email, '127.0.0.1'])), amount: 5);
+    RateLimiter::increment(md5('login'.implode('|', [$account->email, '127.0.0.1'])), amount: 5);
 
-    $response = $this->post(route('login.store'), [
-        'email' => $user->email,
+    $response = $this->withSession([])->post(route('login.store'), [
+        'email' => $account->email,
         'password' => 'wrong-password',
+        '_token' => csrf_token(),
     ]);
 
     $response->assertTooManyRequests();

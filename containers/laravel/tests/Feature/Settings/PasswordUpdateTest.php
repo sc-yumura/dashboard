@@ -1,47 +1,49 @@
 <?php
 
-use App\Models\User;
+use App\Models\AuthenticateAccount;
 use Illuminate\Support\Facades\Hash;
 
-test('password update page is displayed', function () {
-    $user = User::factory()->create();
+test('パスワード更新ページが表示される', function () {
+    $account = AuthenticateAccount::factory()->create();
 
     $response = $this
-        ->actingAs($user)
+        ->actingAs($account)
         ->get(route('user-password.edit'));
 
     $response->assertStatus(200);
 });
 
-test('password can be updated', function () {
-    $user = User::factory()->create();
+test('パスワードを更新できる', function () {
+    $account = AuthenticateAccount::factory()->create();
 
     $response = $this
-        ->actingAs($user)
-        ->from(route('user-password.edit'))
+        ->actingAs($account)
+        ->from(route('user-password.edit'))->withSession([])
         ->put(route('user-password.update'), [
             'current_password' => 'password',
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
+            '_token' => csrf_token(),
         ]);
 
     $response
         ->assertSessionHasNoErrors()
         ->assertRedirect(route('user-password.edit'));
 
-    expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
+    expect(Hash::check('new-password', $account->refresh()->password))->toBeTrue();
 });
 
-test('correct password must be provided to update password', function () {
-    $user = User::factory()->create();
+test('正しいパスワードを提供しないとパスワードを更新できない', function () {
+    $account = AuthenticateAccount::factory()->create();
 
     $response = $this
-        ->actingAs($user)
-        ->from(route('user-password.edit'))
+        ->actingAs($account)
+        ->from(route('user-password.edit'))->withSession([])
         ->put(route('user-password.update'), [
             'current_password' => 'wrong-password',
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
+            '_token' => csrf_token(),
         ]);
 
     $response

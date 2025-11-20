@@ -1,19 +1,20 @@
 <?php
 
-test('registration screen can be rendered', function () {
+test('登録画面が表示できる', function () {
     $response = $this->get(route('register'));
 
     $response->assertStatus(200);
 });
 
-test('new users can register', function () {
-    $response = $this->post(route('register.store'), [
+test('新しいユーザーを登録できる', function () {
+    $response = $this->withSession([])->post(route('register.store'), [
         'name' => 'Test User',
         'email' => 'test@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
+        '_token' => csrf_token()
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('home', absolute: false));
 });
