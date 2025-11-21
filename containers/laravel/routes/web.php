@@ -8,12 +8,13 @@ use App\Http\Controllers;
 // =======================
 // 公開ページ
 // =======================
-Route::get('/', [Controllers\ProductsController::class, 'index'])->name('home');
+Route::get('/', [Controllers\ProductController::class, 'index'])->name('home');
 
 // =======================
 // 商品
 // =======================
-Route::get('/products/{product:slug}', [Controllers\ProductsController::class, 'show'])->name('products.show');
+Route::get('/products', [Controllers\ProductController::class, 'index'])->name('products.index');
+Route::get('/products/{product}', [Controllers\ProductController::class, 'show'])->name('products.show');
 
 // =======================
 // カテゴリ
