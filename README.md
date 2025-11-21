@@ -1,4 +1,7 @@
 # README
+
+[![pest](https://github.com/sc-yumura/dashboard/actions/workflows/pest.yml/badge.svg)](https://github.com/sc-yumura/dashboard/actions/workflows/pest.yml)
+
 ## Project Title / プロジェクトのタイトル
 
 One Paragraph of project description goes here  
