@@ -1,0 +1,103 @@
+# This is a basic workflow to help you get started with Actions
+
+name: pest
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  # push:
+  #   branches: [ "main" ]
+  # pull_request:
+  #   branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  pest:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_DB: pest_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mbstring, bcmath, xml, ctype, json, tokenizer, sqlite, pdo, pdo_pgsql, pgsql
+          ini-values: post_max_size=256M, upload_max_filesize=256M, memory_limit=512M, max_execution_time=300
+          coverage: xdebug
+
+      - name: Cache Composer deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            containers/laravel/vendor
+            ~/.composer/cache
+          key: ${{ runner.os }}-composer-${{ hashFiles('containers/laravel/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        working-directory: containers/laravel
+        run: composer install -q --no-ansi --no-interaction --no-progress --prefer-dist
+
+      - name: Create .env file
+        working-directory: containers/laravel
+        run: cp .env.example .env
+
+      - name: Ensure DB env for tests
+        run: |
+          # Set DB env for Laravel's artisan commands during the job
+          echo "DB_CONNECTION=pgsql" >> containers/laravel/.env
+          echo "DB_HOST=127.0.0.1" >> containers/laravel/.env
+          echo "DB_PORT=5432" >> containers/laravel/.env
+          echo "DB_DATABASE=pest_test" >> containers/laravel/.env
+          echo "DB_USERNAME=postgres" >> containers/laravel/.env
+          echo "DB_PASSWORD=postgres" >> containers/laravel/.env
+
+      - name: Wait for Postgres
+        run: |
+          until pg_isready -h 127.0.0.1 -p 5432 -U postgres; do
+            echo "Waiting for Postgres..."
+            sleep 1
+          done
+
+      - name: Generate application key
+        working-directory: containers/laravel
+        run: php artisan key:generate
+
+      - name: Migrate database
+        working-directory: containers/laravel
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: pest_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+        run: php artisan migrate --seed --force
+
+      # Runs a single command using the runners shell
+      - name: Run tests
+        working-directory: containers/laravel
+        run: ./vendor/bin/pest --coverage
